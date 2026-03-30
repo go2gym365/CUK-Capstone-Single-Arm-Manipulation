@@ -3,7 +3,6 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 data/raw/
-results/
 demo/outputs/
 
 
@@ -15,11 +14,5 @@ results/**/videos/*.mov
 results/**/videos/*.mkv
 
 # allow demo gifs
-!results/demo/gifs/
-!results/demo/gifs/*.gif
-
-# allow small screenshots
-!results/demo/screenshots/
-!results/demo/screenshots/*.png
-!results/demo/screenshots/*.jpg
-!results/demo/screenshots/*.jpeg
+results/*/demo/
+results/*/demo/
