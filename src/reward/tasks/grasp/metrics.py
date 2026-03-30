@@ -1,1 +1,0 @@
-"""Grasp task metrics."""
