@@ -1,0 +1,1 @@
+"""Grasp task object definitions."""

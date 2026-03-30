@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+data/raw/
+results/
+demo/outputs/
+
+
+# Ignore the .env file that contains sensitive information
+# experiment videos
+results/**/videos/*.mp4
+results/**/videos/*.avi
+results/**/videos/*.mov
+results/**/videos/*.mkv
+
+# allow demo gifs
+!results/demo/gifs/
+!results/demo/gifs/*.gif
+
+# allow small screenshots
+!results/demo/screenshots/
+!results/demo/screenshots/*.png
+!results/demo/screenshots/*.jpg
+!results/demo/screenshots/*.jpeg

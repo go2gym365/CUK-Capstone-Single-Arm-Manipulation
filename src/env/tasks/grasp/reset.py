@@ -1,0 +1,1 @@
+"""Grasp task reset logic."""

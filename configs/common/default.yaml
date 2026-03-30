@@ -1,0 +1,3 @@
+project_name: cuk-capstone-single-arm-manipulation
+seed: 42
+device: cpu

@@ -1,0 +1,3 @@
+data_dir: data
+results_dir: results
+checkpoints_dir: demo/checkpoints
