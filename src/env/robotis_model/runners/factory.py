@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .robotis_env import OMXReachEnv
+from ..robotis_env import OMXReachEnv
 
 
 def make_env(task: str = "reach", robot: str = "robotis_omx", **kwargs: Any):

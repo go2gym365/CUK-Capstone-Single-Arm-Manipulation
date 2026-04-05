@@ -27,7 +27,7 @@ class OMXReachEnv(gym.Env):
         super().__init__()
 
         if xml_path is None:
-            xml_path = str(Path(__file__).resolve().parent / "robotis_model" / "scene_reach.xml")
+            xml_path = str(Path(__file__).resolve().parent / "scene_cube_bottle.xml")
 
         self.xml_path = xml_path
         self.frame_skip = frame_skip
@@ -49,6 +49,8 @@ class OMXReachEnv(gym.Env):
         self.object_joint_name = "object_main_free"
 
         self.home_joint_qpos = np.array([0.0, -0.35, 0.75, -0.45, 0.0], dtype=np.float64)
+        self.table_top_z = 0.12
+        self.object_half_extent = 0.012
 
         self._init_ids()
         self._init_ctrl_range()
@@ -144,7 +146,8 @@ class OMXReachEnv(gym.Env):
 
     def _set_object_pose(self, object_xy: np.ndarray) -> None:
         qadr = self.object_qpos_adr
-        self.data.qpos[qadr : qadr + 3] = np.array([object_xy[0], object_xy[1], 0.047], dtype=np.float64)
+        object_z = self.table_top_z + self.object_half_extent
+        self.data.qpos[qadr : qadr + 3] = np.array([object_xy[0], object_xy[1], object_z], dtype=np.float64)
         self.data.qpos[qadr + 3 : qadr + 7] = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
         self.data.qvel[self.object_qvel_adr : self.object_qvel_adr + 6] = 0.0
 

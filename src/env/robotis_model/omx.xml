@@ -58,7 +58,7 @@
   </default>
 
   <worldbody>
-    <body name="link0" childclass="omx">
+    <body name="link0" pos="0 0 0.12" childclass="omx">
       <inertial pos="-1.441250800e-02 -3.149887900e-03 1.927659900e-02" quat="1.0 0.0 0.0 0.0" mass="2.238905100e-01" diaginertia="0.00035680461 0.00021941932 0.00045575899"/>
       <geom mesh="follower_01_base" class="visual"/>
       <geom mesh="follower_01_base" class="collision"/>
