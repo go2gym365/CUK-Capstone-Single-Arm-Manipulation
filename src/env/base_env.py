@@ -36,7 +36,16 @@ class BaseEnv(gym.Env):
         self.step_count = 0
 
         self.joint_names = ["joint1", "joint2", "joint3", "joint4", "joint5"]
-        self.actuator_names = ["a_joint1", "a_joint2", "a_joint3", "a_joint4", "a_joint5", "a_gripper"]
+        self.arm_actuator_names = ["a_joint1", "a_joint2", "a_joint3", "a_joint4", "a_joint5"]
+        self.gripper_actuator_names = ["a_left_finger", "a_right_finger"]
+        self.home_joint_qpos = np.array(
+            [-0.645036137869307, -0.6617748701474854, -0.2688988660318774, 1.1293633543011732, 2.8497103459817916],
+            dtype=np.float64,
+        )
+        self.home_gripper_ctrl = 0.0
+        self.reset_settle_steps = 200
+        self.gripper_servo_open_deg = 60.0
+        self.gripper_servo_close_deg = 135.0
 
         self._init_ids()
         self._init_ctrl_range()
@@ -81,6 +90,7 @@ class BaseEnv(gym.Env):
         self.bottle_joint_id = self._name2id(mujoco.mjtObj.mjOBJ_JOINT, "object_bottle_free")
         
         self.left_finger_joint_id = self._name2id(mujoco.mjtObj.mjOBJ_JOINT, "left_finger_joint")
+        self.right_finger_joint_id = self._name2id(mujoco.mjtObj.mjOBJ_JOINT, "right_finger_joint")
 
         self.object_qpos_adr = self.model.jnt_qposadr[self.object_joint_id]
         self.object_qvel_adr = self.model.jnt_dofadr[self.object_joint_id]
@@ -90,6 +100,8 @@ class BaseEnv(gym.Env):
 
         self.gripper_qpos_adr = self.model.jnt_qposadr[self.left_finger_joint_id]
         self.gripper_qvel_adr = self.model.jnt_dofadr[self.left_finger_joint_id]
+        self.right_gripper_qpos_adr = self.model.jnt_qposadr[self.right_finger_joint_id]
+        self.right_gripper_qvel_adr = self.model.jnt_dofadr[self.right_finger_joint_id]
 
         self.joint_qpos_adr = []
         self.joint_qvel_adr = []
@@ -102,10 +114,27 @@ class BaseEnv(gym.Env):
         self.ctrl_min = np.zeros(6, dtype=np.float32)
         self.ctrl_max = np.zeros(6, dtype=np.float32)
 
-        for i, actuator_name in enumerate(self.actuator_names):
+        for i, actuator_name in enumerate(self.arm_actuator_names):
             aid = self._name2id(mujoco.mjtObj.mjOBJ_ACTUATOR, actuator_name)
             self.ctrl_min[i] = self.model.actuator_ctrlrange[aid, 0]
             self.ctrl_max[i] = self.model.actuator_ctrlrange[aid, 1]
+
+        left_gripper_aid = self._name2id(mujoco.mjtObj.mjOBJ_ACTUATOR, self.gripper_actuator_names[0])
+        right_gripper_aid = self._name2id(mujoco.mjtObj.mjOBJ_ACTUATOR, self.gripper_actuator_names[1])
+        self.left_gripper_actuator_id = left_gripper_aid
+        self.right_gripper_actuator_id = right_gripper_aid
+
+        left_range = self.model.actuator_ctrlrange[left_gripper_aid]
+        right_range = self.model.actuator_ctrlrange[right_gripper_aid]
+        self.ctrl_min[-1] = float(left_range[0])
+        self.ctrl_max[-1] = float(left_range[1])
+
+        if not np.allclose(left_range, right_range):
+            raise ValueError("Left/right gripper actuator ranges do not match.")
+
+        self.gripper_joint_min = float(left_range[0])
+        self.gripper_joint_max = float(left_range[1])
+        self.home_gripper_ctrl = self._servo_deg_to_gripper_joint(self.gripper_servo_open_deg)
 
     def _init_task_state(self):
         self.cube_color_id = 0
@@ -154,14 +183,50 @@ class BaseEnv(gym.Env):
         self.data.qpos[bqadr + 3:bqadr + 7] = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
         self.data.qvel[self.bottle_qvel_adr:self.bottle_qvel_adr + 6] = 0.0
 
+    def _set_robot_home(self):
+        for qpos_adr, qvel_adr, joint_qpos in zip(
+            self.joint_qpos_adr, self.joint_qvel_adr, self.home_joint_qpos
+        ):
+            self.data.qpos[qpos_adr] = joint_qpos
+            self.data.qvel[qvel_adr] = 0.0
+
+        self._apply_gripper_target(self.home_gripper_ctrl)
+
+        self.data.ctrl[:] = 0.0
+        self.data.ctrl[: len(self.home_joint_qpos)] = self.home_joint_qpos
+        self.data.ctrl[self.left_gripper_actuator_id] = self.home_gripper_ctrl
+        self.data.ctrl[self.right_gripper_actuator_id] = self.home_gripper_ctrl
+
     def _get_target_pos(self, color_id: int) -> np.ndarray:
         if color_id == 0:
             return self.data.site_xpos[self.target_blue_site_id].copy()
         return self.data.site_xpos[self.target_purple_site_id].copy()
 
+    def _servo_deg_to_gripper_joint(self, servo_deg: float) -> float:
+        servo_deg = float(np.clip(servo_deg, self.gripper_servo_open_deg, self.gripper_servo_close_deg))
+        servo_span = self.gripper_servo_close_deg - self.gripper_servo_open_deg
+        if servo_span <= 0.0:
+            return self.gripper_joint_min
+
+        alpha = (servo_deg - self.gripper_servo_open_deg) / servo_span
+        return float(self.gripper_joint_min + alpha * (self.gripper_joint_max - self.gripper_joint_min))
+
+    def _apply_gripper_target(self, gripper_qpos: float):
+        gripper_qpos = float(np.clip(gripper_qpos, self.gripper_joint_min, self.gripper_joint_max))
+        self.data.qpos[self.gripper_qpos_adr] = gripper_qpos
+        self.data.qvel[self.gripper_qvel_adr] = 0.0
+        self.data.qpos[self.right_gripper_qpos_adr] = gripper_qpos
+        self.data.qvel[self.right_gripper_qvel_adr] = 0.0
+
     def _scale_action(self, action: np.ndarray) -> np.ndarray:
         action = np.clip(action, -1.0, 1.0)
-        ctrl = self.ctrl_min + 0.5 * (action + 1.0) * (self.ctrl_max - self.ctrl_min)
+        ctrl = np.zeros(6, dtype=np.float64)
+        ctrl[:5] = self.ctrl_min[:5] + 0.5 * (action[:5] + 1.0) * (self.ctrl_max[:5] - self.ctrl_min[:5])
+
+        gripper_servo_deg = self.gripper_servo_open_deg + 0.5 * (float(action[-1]) + 1.0) * (
+            self.gripper_servo_close_deg - self.gripper_servo_open_deg
+        )
+        ctrl[-1] = self._servo_deg_to_gripper_joint(gripper_servo_deg)
         return ctrl.astype(np.float64)
 
     # -----------------------------
@@ -171,8 +236,26 @@ class BaseEnv(gym.Env):
         qpos = np.array([self.data.qpos[a] for a in self.joint_qpos_adr], dtype=np.float32)
         qvel = np.array([self.data.qvel[a] for a in self.joint_qvel_adr], dtype=np.float32)
 
-        gripper_joint_pos = np.array([self.data.qpos[self.gripper_qpos_adr]], dtype=np.float32)
-        gripper_joint_vel = np.array([self.data.qvel[self.gripper_qvel_adr]], dtype=np.float32)
+        gripper_joint_pos = np.array(
+            [
+                0.5
+                * (
+                    self.data.qpos[self.gripper_qpos_adr]
+                    + self.data.qpos[self.right_gripper_qpos_adr]
+                )
+            ],
+            dtype=np.float32,
+        )
+        gripper_joint_vel = np.array(
+            [
+                0.5
+                * (
+                    self.data.qvel[self.gripper_qvel_adr]
+                    + self.data.qvel[self.right_gripper_qvel_adr]
+                )
+            ],
+            dtype=np.float32,
+        )
 
         ee_pos = self.data.site_xpos[self.ee_site_id].astype(np.float32).copy()
         grasp_pos = self.data.site_xpos[self.grasp_site_id].astype(np.float32).copy()
@@ -224,8 +307,10 @@ class BaseEnv(gym.Env):
         cube_to_target = float(np.linalg.norm(cube_pos - cube_target_pos))
         bottle_to_target = float(np.linalg.norm(bottle_pos - bottle_target_pos))
 
-        gripper_joint_pos = float(self.data.qpos[self.gripper_qpos_adr])
-        gripper_closed = gripper_joint_pos > 0.020
+        gripper_joint_pos = 0.5 * float(
+            self.data.qpos[self.gripper_qpos_adr] + self.data.qpos[self.right_gripper_qpos_adr]
+        )
+        gripper_closed = gripper_joint_pos > 0.007
 
         cube_lifted = cube_pos[2] > 0.155
         bottle_lifted = bottle_pos[2] > 0.165 # 물병이 더 높으므로 기준 상향
@@ -304,12 +389,19 @@ class BaseEnv(gym.Env):
 
         self._sample_task()
         self._apply_object_color()
+        self._set_robot_home()
 
         cube_xy, bottle_xy = self._sample_object_xy()
         cube_pos = np.array([cube_xy[0], cube_xy[1], 0.136], dtype=np.float64)
         bottle_pos = np.array([bottle_xy[0], bottle_xy[1], 0.150], dtype=np.float64) # 물병은 높이가 약간 더 큽니다
         self._set_object_pose(cube_pos, bottle_pos)
 
+        mujoco.mj_forward(self.model, self.data)
+        for _ in range(self.reset_settle_steps):
+            self._apply_gripper_target(self.home_gripper_ctrl)
+            mujoco.mj_forward(self.model, self.data)
+            mujoco.mj_step(self.model, self.data)
+        self._apply_gripper_target(self.home_gripper_ctrl)
         mujoco.mj_forward(self.model, self.data)
 
         obs = self._get_obs()
@@ -324,10 +416,17 @@ class BaseEnv(gym.Env):
         self.last_action = action.copy()
 
         ctrl = self._scale_action(action)
-        self.data.ctrl[:] = ctrl
+        self.data.ctrl[:] = 0.0
+        self.data.ctrl[:5] = ctrl[:5]
+        self.data.ctrl[self.left_gripper_actuator_id] = ctrl[-1]
+        self.data.ctrl[self.right_gripper_actuator_id] = ctrl[-1]
 
         for _ in range(self.frame_skip):
+            self._apply_gripper_target(float(ctrl[-1]))
+            mujoco.mj_forward(self.model, self.data)
             mujoco.mj_step(self.model, self.data)
+        self._apply_gripper_target(float(ctrl[-1]))
+        mujoco.mj_forward(self.model, self.data)
 
         self.step_count += 1
 
