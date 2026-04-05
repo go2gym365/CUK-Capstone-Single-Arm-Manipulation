@@ -61,8 +61,15 @@
 
 ## 7. 실행 예시
 예시 실행 명령은 아래와 같습니다.
+팀 공통 실행환경은 `python3 + .venv + requirements.txt`로 고정합니다.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
 ```bash
 python src/ppo/tasks/pick_and_place/train.py
 python src/sac/tasks/push/train.py
 python demo/run_demo.py
+```
