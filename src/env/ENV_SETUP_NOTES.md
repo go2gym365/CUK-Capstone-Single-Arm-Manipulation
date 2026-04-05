@@ -10,14 +10,26 @@
 
 ## 1. 문서 목적
 이 문서는 `src/env` 하위에서 최근 진행한 ROBOTIS OMX 기반 환경 설정 변경사항을 한 번에 정리한 기록입니다.  
-특히 Pick-and-Place 실험을 위한 씬 구성과 GUI 데모 실행법을 현재 코드 기준으로 정리합니다.
+특히 "초기 환경 구성 추가 + 공통 씬 통합 정리"까지 포함해, Pick-and-Place 실험 기준을 현재 코드 상태로 정리합니다.
 
 ## 2. 변경 개요
+- ROBOTIS OMX 모델 에셋 / XML / 실행 러너를 env에 초기 추가
+- `requirements.txt` 기반 실행 환경(.venv) 준비 방식 반영
 - ROBOTIS OMX 관련 코드/에셋 중심을 `src/env/robotis_model/`로 정리
 - `scene_reach.xml` 제거, 공통 작업 씬 `scene_cube_bottle.xml` 도입
 - 공통 씬에 로봇 + 테이블 + 큐브 + 병 + placeholder(목표 패드) 반영
 - GUI 실행 스크립트에서 site group 0 마커 기본 OFF 적용
 - 환경 기본 XML 및 설정 파일 경로를 `scene_cube_bottle.xml` 기준으로 변경
+
+### 2.1 커밋 단위 요약
+- `bc2d207` (`feat(env): add ROBOTIS OMX model env and runners`)
+  - ROBOTIS OMX 모델/에셋 추가
+  - env 실행 기본 구조(`robotis_env`, `factory`, `runners`) 추가
+  - `configs/env/reach.yaml` 및 실행 의존성(requirements) 반영
+- `c96eb11` (`feat(env): consolidate cube-bottle scene and docs`)
+  - `scene_cube_bottle.xml` 도입 및 `scene_reach.xml` 제거
+  - 파일 경로 재정리(`src/env` -> `src/env/robotis_model`)
+  - GUI 마커 기본 OFF, 문서(`ENV_SETUP_NOTES.md`) 추가
 
 ## 3. 씬 구조 변경
 ### 3.1 유지/추가/삭제
