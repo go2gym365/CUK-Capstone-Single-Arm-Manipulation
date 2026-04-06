@@ -1,26 +1,49 @@
-"""Launch MuJoCo GUI viewer for ROBOTIS OMX models."""
+"""Compatibility-aware MuJoCo GUI runner for ROBOTIS OMX models."""
+
 from __future__ import annotations
 
 import argparse
 import time
 from pathlib import Path
 
-import mujoco
-from mujoco import viewer
+from ..model_paths import MODEL_VARIANTS, list_model_scenes, resolve_model_xml
+
+_SCENE_CHOICES = tuple(
+    dict.fromkeys(
+        scene_name
+        for model_name in MODEL_VARIANTS
+        for scene_name in list_model_scenes(model_name)
+    )
+)
 
 
-def _resolve_xml(scene: str) -> Path:
-    base_dir = Path(__file__).resolve().parents[1]
-    if scene == "base":
-        return base_dir / "scene.xml"
-    if scene == "cube_bottle":
-        return base_dir / "scene_cube_bottle.xml"
-    raise ValueError(f"Unsupported scene: {scene}")
+def _resolve_xml(scene: str | None = None, model: str = "env_ms") -> Path:
+    return resolve_model_xml(model=model, scene=scene)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="View ROBOTIS OMX model in MuJoCo GUI.")
-    parser.add_argument("--scene", choices=["base", "cube_bottle"], default="cube_bottle")
+    try:
+        import mujoco
+        from mujoco import viewer
+    except ModuleNotFoundError as exc:
+        raise SystemExit(
+            "mujoco is required to run the ROBOTIS OMX viewer. "
+            "Install it in the active environment and try again."
+        ) from exc
+
+    parser = argparse.ArgumentParser(description="View ROBOTIS OMX model assets in MuJoCo GUI.")
+    parser.add_argument(
+        "--model",
+        choices=MODEL_VARIANTS,
+        default="env_ms",
+        help="Model asset package to load. Default keeps existing env_ms behavior.",
+    )
+    parser.add_argument(
+        "--scene",
+        choices=_SCENE_CHOICES,
+        default=None,
+        help="Named XML scene alias. Defaults to the selected model's default scene.",
+    )
     parser.add_argument(
         "--show-site-group0",
         action="store_true",
@@ -29,7 +52,7 @@ def main() -> None:
     parser.add_argument(
         "--xml-path",
         default=None,
-        help="Optional explicit XML path. If set, --scene is ignored.",
+        help="Optional explicit XML path. If set, --model and --scene are ignored.",
     )
     parser.add_argument(
         "--dry-run",
@@ -41,14 +64,14 @@ def main() -> None:
     if args.xml_path:
         xml_path = Path(args.xml_path).resolve()
     else:
-        xml_path = _resolve_xml(args.scene)
+        xml_path = _resolve_xml(scene=args.scene, model=args.model)
 
     model = mujoco.MjModel.from_xml_path(str(xml_path))
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
 
     print(f"[ok] loaded: {xml_path}")
-    print(f"[model] nq={model.nq}, nv={model.nv}, nu={model.nu}, nbody={model.nbody}")
+    print(f"[model] variant={args.model} nq={model.nq}, nv={model.nv}, nu={model.nu}, nbody={model.nbody}")
 
     if args.dry_run:
         return
@@ -64,6 +87,9 @@ def main() -> None:
             mujoco.mj_step(model, data)
             handle.sync()
             time.sleep(model.opt.timestep)
+
+
+__all__ = ["_resolve_xml", "main"]
 
 
 if __name__ == "__main__":

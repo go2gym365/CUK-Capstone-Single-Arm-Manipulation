@@ -18,12 +18,12 @@
 - `base_env.py`: 공통 환경 클래스
 - `env_utils.py`: 환경 관련 유틸
 - `robot_model/`: 로봇 모델 관련 파일
-- `ROBOTIS_OMX_AI/`: ROBOTIS OMX 모델(XML, asset) 및 실행 유틸
+- `ROBOTIS_OMX_AI/env_ms/`: ROBOTIS OMX 모델(XML, asset) 및 실행 유틸
 - `tasks/`: task별 환경 정의
 
-`ROBOTIS_OMX_AI/`에는 실행 스크립트를 `runners/`에 모아 둡니다.
-- `ROBOTIS_OMX_AI/runners/smoke_test.py`
-- `ROBOTIS_OMX_AI/runners/view_robotis.py`
+`ROBOTIS_OMX_AI/env_ms/`에는 실행 스크립트를 `runners/`에 모아 둡니다.
+- `ROBOTIS_OMX_AI/env_ms/runners/smoke_test.py`
+- `ROBOTIS_OMX_AI/env_ms/runners/view_robotis.py`
 
 ---
 

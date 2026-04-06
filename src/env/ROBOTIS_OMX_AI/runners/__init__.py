@@ -1,1 +1,1 @@
-"""Executable runners for ROBOTIS OMX model utilities."""
+"""Compatibility wrappers for ROBOTIS OMX runner modules."""
