@@ -15,7 +15,7 @@
 ## 2. 변경 개요
 - ROBOTIS OMX 모델 에셋 / XML / 실행 러너를 env에 초기 추가
 - `requirements.txt` 기반 실행 환경(.venv) 준비 방식 반영
-- ROBOTIS OMX 관련 코드/에셋 중심을 `src/env/robotis_model/`로 정리
+- ROBOTIS OMX 관련 코드/에셋 중심을 `src/env/ROBOTIS_OMX_AI/`로 정리
 - `scene_reach.xml` 제거, 공통 작업 씬 `scene_cube_bottle.xml` 도입
 - 공통 씬에 로봇 + 테이블 + 큐브 + 병 + placeholder(목표 패드) 반영
 - GUI 실행 스크립트에서 site group 0 마커 기본 OFF 적용
@@ -28,14 +28,14 @@
   - `configs/env/reach.yaml` 및 실행 의존성(requirements) 반영
 - `c96eb11` (`feat(env): consolidate cube-bottle scene and docs`)
   - `scene_cube_bottle.xml` 도입 및 `scene_reach.xml` 제거
-  - 파일 경로 재정리(`src/env` -> `src/env/robotis_model`)
+  - 파일 경로 재정리(`src/env` -> `src/env/ROBOTIS_OMX_AI`)
   - GUI 마커 기본 OFF, 문서(`ENV_SETUP_NOTES.md`) 추가
 
 ## 3. 씬 구조 변경
 ### 3.1 유지/추가/삭제
-- 유지: `src/env/robotis_model/scene.xml` (기본 베이스 씬)
-- 추가: `src/env/robotis_model/scene_cube_bottle.xml` (공통 작업 씬)
-- 삭제: `src/env/robotis_model/scene_reach.xml`
+- 유지: `src/env/ROBOTIS_OMX_AI/scene.xml` (기본 베이스 씬)
+- 추가: `src/env/ROBOTIS_OMX_AI/scene_cube_bottle.xml` (공통 작업 씬)
+- 삭제: `src/env/ROBOTIS_OMX_AI/scene_reach.xml`
 
 ### 3.2 공통 작업 씬(`scene_cube_bottle.xml`) 구성
 - 로봇: `omx.xml` include
@@ -70,7 +70,7 @@
 
 ## 5. 실행 스크립트/기본값 변경
 ### 5.1 GUI 실행 스크립트
-파일: `src/env/robotis_model/runners/view_robotis.py`
+파일: `src/env/ROBOTIS_OMX_AI/runners/view_robotis.py`
 - `--scene` 선택지: `base`, `cube_bottle`
 - 기본값: `cube_bottle`
 - 기본 동작: site group 0 OFF
@@ -78,46 +78,46 @@
 - `--dry-run` 지원 (모델 로드만 확인)
 
 ### 5.2 환경 기본 XML
-파일: `src/env/robotis_model/robotis_env.py`
+파일: `src/env/ROBOTIS_OMX_AI/robotis_env.py`
 - `xml_path` 미지정 시 기본값:
-  - `src/env/robotis_model/scene_cube_bottle.xml`
+  - `src/env/ROBOTIS_OMX_AI/scene_cube_bottle.xml`
 
 ### 5.3 설정 파일 경로
 파일: `configs/env/reach.yaml`
-- `xml_path: src/env/robotis_model/scene_cube_bottle.xml`
+- `xml_path: src/env/ROBOTIS_OMX_AI/scene_cube_bottle.xml`
 
 ## 6. GUI 데모 실행 방법
 프로젝트 루트 기준:
 
 ```bash
 # 1) 기본 GUI 실행 (site group 0 마커 OFF)
-.venv/bin/python -m src.env.robotis_model.runners.view_robotis --scene cube_bottle
+.venv/bin/python -m src.env.ROBOTIS_OMX_AI.runners.view_robotis --scene cube_bottle
 ```
 
 ```bash
 # 2) 마커 포함 GUI 실행 (site group 0 ON)
-.venv/bin/python -m src.env.robotis_model.runners.view_robotis --scene cube_bottle --show-site-group0
+.venv/bin/python -m src.env.ROBOTIS_OMX_AI.runners.view_robotis --scene cube_bottle --show-site-group0
 ```
 
 ```bash
 # 3) 로드 확인만 수행 (GUI 미오픈)
-.venv/bin/python -m src.env.robotis_model.runners.view_robotis --scene cube_bottle --dry-run
+.venv/bin/python -m src.env.ROBOTIS_OMX_AI.runners.view_robotis --scene cube_bottle --dry-run
 ```
 
 ```bash
 # 4) 환경 스모크 테스트
-.venv/bin/python -m src.env.robotis_model.runners.smoke_test --steps 5
+.venv/bin/python -m src.env.ROBOTIS_OMX_AI.runners.smoke_test --steps 5
 ```
 
 ## 7. 현재 상태 체크리스트 (이 문서 기준 최신 기준 파일)
-- [ ] `src/env/robotis_model/scene_cube_bottle.xml` 존재
-- [ ] `src/env/robotis_model/scene.xml` 존재
-- [ ] `src/env/robotis_model/scene_reach.xml` 제거됨
-- [ ] `src/env/robotis_model/runners/view_robotis.py`에 `--scene cube_bottle` 기본값 적용
-- [ ] `src/env/robotis_model/runners/view_robotis.py`에 site group 0 기본 OFF 적용
-- [ ] `src/env/robotis_model/robotis_env.py` 기본 XML이 `scene_cube_bottle.xml`
+- [ ] `src/env/ROBOTIS_OMX_AI/scene_cube_bottle.xml` 존재
+- [ ] `src/env/ROBOTIS_OMX_AI/scene.xml` 존재
+- [ ] `src/env/ROBOTIS_OMX_AI/scene_reach.xml` 제거됨
+- [ ] `src/env/ROBOTIS_OMX_AI/runners/view_robotis.py`에 `--scene cube_bottle` 기본값 적용
+- [ ] `src/env/ROBOTIS_OMX_AI/runners/view_robotis.py`에 site group 0 기본 OFF 적용
+- [ ] `src/env/ROBOTIS_OMX_AI/robotis_env.py` 기본 XML이 `scene_cube_bottle.xml`
 - [ ] `configs/env/reach.yaml`의 `xml_path`가 `scene_cube_bottle.xml`
-- [ ] `src/env/__init__.py`가 `robotis_model` 경로 기반 import 사용
+- [ ] `src/env/__init__.py`가 `ROBOTIS_OMX_AI` 경로 기반 import 사용
 
 ## 8. 참고
 - 이 문서는 "현재 워크트리 기준" 변경사항을 정리한 운영 메모입니다.

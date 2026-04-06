@@ -1,6 +1,6 @@
 task: reach
 robot: robotis_omx
-xml_path: src/env/robotis_model/scene_cube_bottle.xml
+xml_path: src/env/ROBOTIS_OMX_AI/scene_cube_bottle.xml
 frame_skip: 5
 max_steps: 200
 success_threshold: 0.03
